@@ -14,13 +14,13 @@ const network = {
    * @return {Promise}
    */
   async fetch (obj) {
-    console.log('开始网络请求');
+    // console.log('开始网络请求');
     const url = SERVER_URL + obj.url;
     let options = Object.assign(obj, {url})
     const p1 = new Promise((resolve, reject) => {
       
       options.success = function ({data, code}) {
-        console.log(JSON.stringify(data), 7777);
+        // console.log(JSON.stringify(data), 7777);
           // 根据后端接口返回来定制。
           // 根据code 来进行拦截
           if (code == 404) {

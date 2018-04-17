@@ -349,7 +349,7 @@ export default {
   },
   switchSkin (newSkin, oldSkin) {
       this.$page.setTitleBar({backgroundColor: newSkin, textColor: '#ffffff'});
-      console.log(newSkin, oldSkin, 8888);
+    //   console.log(newSkin, oldSkin, 8888);
       const skin = this.skinIcon[newSkin];
       const arr = this.menuList.map(item => {
           item.selectIcon = skin[item.name];

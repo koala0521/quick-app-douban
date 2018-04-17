@@ -171,7 +171,7 @@ import fetch from '@system.fetch'
     async getData (cb) {
       console.log(this.url, 'url');
       const data = await network.get(this.url + '&start='+this.count);
-      console.log(data);
+      // console.log(data);
       const arr = JSON.parse(data)[this.type];
       cb(arr);
 

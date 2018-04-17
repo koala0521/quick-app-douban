@@ -8,7 +8,20 @@
   import './module/network'
   import util from './util'
 
+  // 引入统计代码
+  import APP_STATISTICS from './appStatistics';
+
+
   export default {
+    onCreate:function() {
+        console.info('*****Application onCreate*****' )
+        APP_STATISTICS.createApp( this );
+    },
+    onDestroy () {
+        console.info('*****Application onDestroy*****')        
+        APP_STATISTICS.destroyApp();
+    },
+    
     showMenu: util.showMenu,
     createShortcut: util.createShortcut,
     theme: {skin: 'green', color: '#42bd56'},
