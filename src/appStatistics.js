@@ -1,6 +1,8 @@
 import storage from '@system.storage' 
 import nativeFetch from '@system.fetch'
 import device from '@system.device'
+import geolocation from '@system.geolocation'
+
 
 import app from '@system.app'
 import router from '@system.router'
@@ -10,10 +12,37 @@ import router from '@system.router'
 //调试提示
 import prompt from '@system.prompt'
 
+
+// 工具函数
+const _toString = Object.prototype.toString;
+
+function isObject (obj) {
+    return obj !== null && typeof obj === 'object'
+}
+
+function isPlainObject (obj) {
+    return _toString.call(obj) === '[object Object]'
+}
+
+function isArray(obj){
+    return Array.isArray(obj)
+}
+
+function isEmptyObject(obj){
+    for(var n in obj){
+        return false
+    }
+    return true;
+}
+
+
 // 服务器地址
 const SERVER_URL = 'https://api.douban.com';
 
 // 测试  /v2/movie/top250?count=20
+
+// 缓存的key值
+const STORAGE_KEY = "APP_STATISTICS_DATA";
 
 //  请求封装
 const NETWORK = {
@@ -46,7 +75,7 @@ const NETWORK = {
 
 const APP_STATISTICS = {
 
-    'AC_data':{
+    'baseData':{
         // 应用包名：应用的唯一标识
         'package':'',
 
@@ -71,9 +100,12 @@ const APP_STATISTICS = {
     },
 
     // 设备信息
-    'AC_deviceInfo':null,
+    'AS_deviceInfo':null,
+
+    'hasStorage':false,
     // 打开app
     createApp( deviceData ){
+
         const APP = deviceData || { 'options':{} , '_def':{} };
         
         let d = new Date;
@@ -84,46 +116,54 @@ const APP_STATISTICS = {
         
         console.log( ' 获取当前应用信息 >>>>' , JSON.stringify( source ) );
 
-        APP_STATISTICS.AC_data.packageName = source.packageName;
+        APP_STATISTICS.baseData.packageName = source.packageName;
 
         // 进入时间 待确认是否用前端时间 ？
-        APP_STATISTICS.AC_data.createTime = d.getTime() + '';
+        APP_STATISTICS.baseData.createTime = d.getTime() + '';
 
         // 获取应用包名
-        APP_STATISTICS.AC_data.package = manifest.package;
+        APP_STATISTICS.baseData.package = manifest.package;
         
         // 获取应用名称
-        APP_STATISTICS.AC_data.name = manifest.name;
+        APP_STATISTICS.baseData.name = manifest.name;
 
         // 读取设备id和用户id
         device.getId({
-            type: ['device', 'mac','user', 'advertising'], // 最少一个，最多四个
-            success: function (data) {
 
-                APP_STATISTICS.AC_data.deviceId = data.device;
-                APP_STATISTICS.AC_data.macId = data.mac;
-                APP_STATISTICS.AC_data.userId = data.user;
-                APP_STATISTICS.AC_data.advertisingId = data.advertising;
+            'type': ['device', 'mac','user', 'advertising'], // 最少一个，最多四个
+            'success': function (data) {
 
-                // 查看获取到的信息
-                // console.log( '查看获取到的信息 >>>>' , JSON.stringify( APP_STATISTICS.AC_data ) );
-                APP_STATISTICS.getStorage();
+                APP_STATISTICS.baseData.deviceId = data.device;
+                APP_STATISTICS.baseData.macId = data.mac;
+                APP_STATISTICS.baseData.userId = data.user;
+                APP_STATISTICS.baseData.advertisingId = data.advertising;
+
+                APP_STATISTICS.getStorage()
             },
-            fail: function (data, code) {
+            'fail': function (data, code) {
                 console.log(`handling fail, code = ${code}`)
             }
         });
         // 获取设备信息
         device.getInfo({
             'success':function( data ){
-                APP_STATISTICS.AC_deviceInfo = Object.assign( {} , data ); 
-                // 查看获取到的设备信息
-                // console.log( '查看获取到的设备信息 >>>>' , JSON.stringify( APP_STATISTICS.AC_deviceInfo ) );        
+                APP_STATISTICS.AS_deviceInfo = Object.assign( {} , data );     
 
             }
+        });
+
+        // 获取地理位置
+        console.log( '开始获取地理位置...' );
+        
+        geolocation.getLocation({
+
+            success: function (data) {
+              console.log(`地理位置 success: longitude = ${data.longitude}, latitude = ${data.latitude}`)
+            },
+            fail: function (data, code) {
+              console.log(`地理位置 fail, code = ${code}`)
+            }
         })
-        // let page = router.getState(); //  
-        // console.log( '路由信息>>>>' , page , typeof page );
 
         // 测试 请求
         // NETWORK.get({
@@ -142,27 +182,26 @@ const APP_STATISTICS = {
 
         let d = new Date + '';
         // 关闭时间
-        APP_STATISTICS.AC_data.destroyTime = d.getTime();
+        APP_STATISTICS.baseData.destroyTime = d.getTime();
     },
 
     // 设置缓存
     setStorage(){
 
-        console.log(1111);
+        console.log('开始设置缓存数据');
         // 缓存数据
         let data = {
-            'AC_data': APP_STATISTICS.AC_data,
-            'AC_deviceInfo':APP_STATISTICS.AC_deviceInfo
+            'baseData': APP_STATISTICS.baseData,
+            'AS_deviceInfo':APP_STATISTICS.AS_deviceInfo
         }
-        let key = 'APP_STATISTICS_Data';
 
-        storage.delete(
-            key
-        );
+        storage.delete({
+            'key':STORAGE_KEY
+        });
         storage.set({
-            'key':'APP_STATISTICS_Data',
+            'key':STORAGE_KEY,
             'value':JSON.stringify( data ),
-            success:function(){
+            'success':function(){
 
                 console.log( '设置缓存成功' );                
             }
@@ -172,18 +211,20 @@ const APP_STATISTICS = {
 
     // 读取缓存
     getStorage(){
-        console.log(2222);
-        let data;
-        let key = 'APP_STATISTICS_Data';
-
+        
+        console.log('读取缓存...');
+        let that = this;
         storage.get({
-            key,
-            success: function (data) {
+
+            'key':STORAGE_KEY,
+            'success': function (data) {
                 // console.log( '读取到的缓存数据' ,data );
                 let storageData = data && JSON.parse( data );
 
-                if(  storageData && storageData.AC_data.deviceId ){
-                    data = JSON.parse( data );
+                if(  storageData && storageData.baseData.deviceId ){
+
+                    console.log('读取成功...' , JSON.stringify( storageData ));
+                    that.hasStorage = true;
  
                 }else{
 
@@ -202,3 +243,6 @@ const APP_STATISTICS = {
 
 
 export default APP_STATISTICS 
+
+
+

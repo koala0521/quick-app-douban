@@ -12,7 +12,8 @@
     { "name": "system.fetch"},
     { "name": "system.webview"},
     {"name": "system.storage"},
-    {"name": "system.device"}
+    {"name": "system.device"},
+    {"name": "system.geolocation"}
   ],
   "permissions": [
     { "origin": "*" }
