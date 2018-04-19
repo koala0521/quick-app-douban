@@ -13,7 +13,8 @@
     { "name": "system.webview"},
     {"name": "system.storage"},
     {"name": "system.device"},
-    {"name": "system.geolocation"}
+    {"name": "system.geolocation"},
+    {"name": "system.network"}
   ],
   "permissions": [
     { "origin": "*" }
