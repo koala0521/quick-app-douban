@@ -20,7 +20,10 @@
     { "origin": "*" }
   ],
   "config": {
-    "logLevel": "debug"
+    "logLevel": "debug",
+    "data":{
+      "currentPage":"index"
+    }
   },
   "router": {
     "entry": "Home",

@@ -54,11 +54,27 @@ function getByteLen(val) {
     return len;
   }
 
-//  128位密钥 加密 
+
+//  驼峰式 转为 下划线式 
+function getKebabCase( str ) {
+    return str.replace( /[A-Z]/g, function( i ) {
+        return '_' + i.toLowerCase();
+    })
+}
+
+// 下划线 转 驼峰式
+function getCamelCase( str ) {
+    return str.replace( /_([a-z])/g, function( all, i ){ 
+        return i.toUpperCase();
+    } )
+}
+
+
+  //  128位密钥 加密 
 function aesCbc_encrypt( string ){
 
     if( typeof string !== "string" ){
-        console.log("必须是字符串");
+        console.log("string 必须是字符串");
         return 
     }
     var len = getByteLen( string ) % 16;
@@ -166,8 +182,11 @@ const APP_STATISTICS = {
         // 用户唯一id
         "user":"",
 
+        // uuid 未授权时，生产的用户id
+        "uuid":"",
+
         // 请求id
-        "requestId":"",
+        "requestId": "req" + (new Date).getTime(),
 
         // 是否加密
         "hasEncrypt":"0",
@@ -176,14 +195,11 @@ const APP_STATISTICS = {
         "entry":"",
 
         // 进入app的时间
-        "actionTime_create":"",
-        
-        // 离开app的时间        
-        "actionTime_destroy":""
+        "time":""
     },
 
     // 设备信息
-    "AS_deviceInfo":{
+    "deviceInfo":{
         "brand":"",
         "manufacturer":"",
         "model":"",
@@ -205,12 +221,6 @@ const APP_STATISTICS = {
         'latitude':0
     },
 
-    // 是否有缓存
-    "hasStorage":false,
-
-    //所有授权是否完成
-    "hasWarrantCompleted":false,
-
     // 获取 id 授权
     "deviceIdWarrant":false,
     // 设备信息授权
@@ -228,15 +238,19 @@ const APP_STATISTICS = {
         let d = new Date;
         // 解构出  env 和 manifest 对象
         let { options:{ env } , _def:{ manifest } } = APP;
-        // 获取当前应用信息
+        // 获取 packageName 值
         let { source } = app.getInfo();
-        console.log( 'source 信息 >>>>' , JSON.stringify( source ) );
+
+        APP_STATISTICS.baseData.packageName = source.packageName;
         
         // 进入时间 
-        APP_STATISTICS.baseData.actionTime_create = d.getTime() + '';
+        APP_STATISTICS.baseData.time = d.getTime() + '';
 
-        // 请求id
-        APP_STATISTICS.baseData.requestId = 'req' + d.getTime();
+        // 缓存请求 reqestId
+        storage.set({
+            key: '_SD_BD_REQUEST_ID_',
+            value: APP_STATISTICS.baseData.requestId
+        })
 
         for ( let key in APP_STATISTICS.baseData ) {
 
@@ -257,6 +271,20 @@ const APP_STATISTICS = {
 
         // 获取 entry 页面
         APP_STATISTICS.baseData.entry = manifest.router.entry;
+        
+        // 获取信息
+        APP_STATISTICS.getWarrantData();
+        
+    },
+    // // 关闭app
+    // destroyApp(){
+
+    //     console.log( `关闭app` );
+        
+        
+    // },
+    // 获取授权信息
+    getWarrantData(){
 
         // 读取设备id和用户id
         device.getId({
@@ -269,6 +297,28 @@ const APP_STATISTICS = {
                 APP_STATISTICS.baseData.user = data.user;
 
             },
+            fail: function(data, code) {
+                let dt = new Date();
+                storage.get({
+                    key: "_SD_BD_UUID_",
+                    success: function(data) {
+                        let rid = "";
+                        if( data ){                   
+                            rid = data;
+                        } else {
+                            rid = APP_STATISTICS.createUuId();
+                            storage.set({
+                                key: '_SD_BD_UUID_',
+                                value: rid
+                            })
+                        }
+                        APP_STATISTICS.baseData.uuid = rid;
+                    },
+                    fail: function(data, code) {
+                        console.log("storage handling fail, code=" + code);
+                    }
+                })
+            },
             'complete': function () {
                 APP_STATISTICS.deviceIdWarrant = true;
             }
@@ -280,14 +330,15 @@ const APP_STATISTICS = {
                 for (const key in data ) {
                     if ( data.hasOwnProperty(key) ) {
 
-                        APP_STATISTICS.AS_deviceInfo[key] = data[key];                        
+                        APP_STATISTICS.deviceInfo[key] = data[key];                        
                     }
                 }      
 
-                // 品牌、型号 统一转换小写
-                APP_STATISTICS.AS_deviceInfo.brand = APP_STATISTICS.AS_deviceInfo.brand.toLowerCase();
-                APP_STATISTICS.AS_deviceInfo.model = APP_STATISTICS.AS_deviceInfo.model.toLowerCase();
-
+                // 品牌、型号、生产厂家 统一转换小写
+                APP_STATISTICS.deviceInfo.brand = APP_STATISTICS.deviceInfo.brand.toLowerCase();
+                APP_STATISTICS.deviceInfo.model = APP_STATISTICS.deviceInfo.model.toLowerCase();
+                APP_STATISTICS.deviceInfo.manufacturer = APP_STATISTICS.deviceInfo.manufacturer.toLowerCase();
+            
             },
             'complete': function () {
                 APP_STATISTICS.deviceInfoWarrant = true;
@@ -317,24 +368,9 @@ const APP_STATISTICS = {
                 APP_STATISTICS.networkWarrant = true;
             }
           })
-        
+
         //   监测用户是否完成授权 
         this.lisenerWarranting();
-        
-        // 读取缓存
-        // APP_STATISTICS.getStorage();
-    },
-    // 关闭app
-    destroyApp(){
-
-        let d = new Date + '';
-        // 关闭时间
-        APP_STATISTICS.baseData.actionTime_destroy = d.getTime();
-        // 设置缓存
-        APP_STATISTICS.setStorage();
-
-        console.log( `关闭app11111` );
-        
     },
 
     // 设置缓存
@@ -344,7 +380,7 @@ const APP_STATISTICS = {
         // 缓存数据
         let data = {
             'baseData': APP_STATISTICS.baseData,
-            'AS_deviceInfo':APP_STATISTICS.AS_deviceInfo,
+            'deviceInfo':APP_STATISTICS.deviceInfo,
             "location":APP_STATISTICS.location,
             'creteTime':(new Date)
         }
@@ -368,22 +404,29 @@ const APP_STATISTICS = {
     // 读取缓存
     getStorage(){
 
-        console.log('读取缓存...');
         let that = this;
         storage.get({
 
             'key':STORAGE_KEY,
             'success': function (data) {
-                console.log( '读取到的缓存数据' , data  );
+
                 let storageData = data && JSON.parse( data );
 
-                if(  storageData && storageData.baseData.deviceId ){                    
-                    // console.log('读取成功...' , JSON.stringify( storageData ));
-                    that.hasStorage = true;
-                }               
-                // APP_STATISTICS.setStorage();
+                if(  storageData ){   
 
-              }
+                    delete storageData.creteTime;           
+                    console.log('读取缓存成功...' , JSON.stringify( storageData ));
+                    // 保存数据            
+                    Object.assign( APP_STATISTICS , storageData );
+                }else{
+                    // 没有缓存 ， 申请用户授权，获取数据
+                    that.getWarrantData();
+                }               
+            },
+            "fail":function(){
+                // 没有缓存 ， 申请用户授权，获取数据
+                that.getWarrantData();
+            }
         });
     },
 
@@ -396,33 +439,74 @@ const APP_STATISTICS = {
             if( this.deviceIdWarrant && this.deviceInfoWarrant && this.getLocationWarrant && this.networkWarrant ){
 
                 clearInterval( timer );
-                console.log( `准备发送日志：${ APP_STATISTICS.hasWarrantCompleted }` );
+                console.log( `准备发送日志：` );
                 
                 // 设置缓存
                 APP_STATISTICS.setStorage();
                     
-                let args = Object.assign( {} , APP_STATISTICS.baseData , APP_STATISTICS.AS_deviceInfo , APP_STATISTICS.location );
+                let args = Object.assign( {} , APP_STATISTICS.baseData , APP_STATISTICS.deviceInfo , APP_STATISTICS.location );
                         
-                console.log( '提交日志>>>>>>'  , aesCbc_encrypt( JSON.stringify( args ) )  );  
-
-                let argsToQueryStr = toQueryString( args );      
-
-                // 加密
-                // argsToQueryStr = aesCbc_encrypt( argsToQueryStr );
-
-                // 测试请求
-                NETWORK.get({
-                    url:'/a.gif?' + argsToQueryStr ,
-                    success(data){
-                        if( data.code === 200 ){
-                            console.log( `日志发送成功code= ${ data.code }, data=${ JSON.stringify(data) } ` );                                // 关闭之前设置缓存
-                        }                        
+                // console.log( '提交日志>>>>>>'  , aesCbc_encrypt( JSON.stringify( args ) )  );  
+                storage.get({
+                    key: '_SD_BD_REQUEST_ID_',
+                    "success":function(data){
+                        args.requestId = data;                        
+                        APP_STATISTICS.submitLog( args );
+                    },
+                    "fail":function(){
+                        args.requestId = APP_STATISTICS.baseData.requestId;
+                        APP_STATISTICS.submitLog( args );
                     }
-                });
-            
+                })
+
             }
             
         },10 );
+    },
+    // 生成 uuid
+    createUuId(){
+        let id = "";
+
+        function S4() {
+            return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+        }
+
+        id =  APP_STATISTICS.baseData.package + "-" + S4() + "-" + S4()+ "-" + S4(); 
+
+        return id
+    },
+    // 保存日志数据
+    submitLog( args ){
+
+        // key值转换： 驼峰式 转为 下划线式
+        let change_args = {};
+        for ( const key in args ) {
+            if ( args.hasOwnProperty(key) ) {
+                change_args[ getKebabCase( key ) ] = args[key];                         
+            }
+        }
+     
+        // JSON转为查询字符串
+        let argsToQueryStr = toQueryString( change_args );      
+
+        // 加密
+        argsToQueryStr = aesCbc_encrypt( argsToQueryStr );
+
+        // 提交日志
+        NETWORK.get({
+            url:'/a.gif?' + argsToQueryStr ,
+            success(data){
+                if( data.code === 200 ){
+                    console.log( `日志发送成功code= ${ data.code }, data=${ JSON.stringify(data) } ` );                                // 关闭之前设置缓存
+                }                        
+            }
+        });
+    },
+
+    log(...arg){
+
+        console.log( "统计函数>>>打印日志" ,  JSON.stringify(arguments[0]) );
+        
     }
 
 
@@ -430,8 +514,9 @@ const APP_STATISTICS = {
 
 
 // 全局变量
-// const hookTo = global.__proto__ || global
+const hookTo = global.__proto__ || global;
 
+hookTo.APP_STATISTICS = APP_STATISTICS;
 
 export default APP_STATISTICS 
 

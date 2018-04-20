@@ -77,13 +77,38 @@ import router from '@system.router'
 
 // console.log( ' 关于页面 (app.getInfo())>>>>' , JSON.stringify( app.getInfo() ) );
 
-let page = router.getState(); //  路由信息报错
-console.log( '路由信息>>>>' , JSON.stringify(page) , typeof page );
 
 export default {
   onInit () {
-      const theme = this.$app.$def.theme;
-      // this.$page.setTitleBar({backgroundColor: theme.color, textColor: '#ffffff'});
+    const theme = this.$app.$def.theme;
+    // this.$page.setTitleBar({backgroundColor: theme.color, textColor: '#ffffff'});
+    //console.log( '页面 >> this.$page 信息 >>>>' , typeof this.$page === "object" ? JSON.stringify( this.$page ) : this.$page );
+
+  },
+  onShow(){
+        
+    let page = router.getState(); //  路由信息报错
+    console.log( '路由信息 router.getState() >>>>' , JSON.stringify(page)  );
+
+    // 全局数据 app 的所有地方都可以访问到。
+    let data = this.$app.$data;
+
+    data.currentPage = "aoubt/aaa";
+
+
+    APP_STATISTICS.log( this.$page );
+
+    // console.log( '页面 >> this 信息 >>>>' ,  typeof this === "object" ? JSON.stringify( this ) : this  );
+
+    console.log( '页面 >> this.$page 信息 >>>>' , typeof this.$page === "object" ? JSON.stringify( this.$page ) : this.$page );
+
+    // console.log( '页面 >> this.$app 信息 >>>>' , typeof this.$app === "object" ? JSON.stringify( this.$app ) : this.$app );
+
+    console.log( '页面 >> this.$app.$def 信息 >>>>' , typeof this.$app.$def === "object" ? JSON.stringify( this.$app.$def ) : this.$app.$def );
+
+    console.log( '页面 >> this.$app.$data 信息 >>>>' , typeof this.$app.$data === "object" ? JSON.stringify( this.$app.$data ) : this.$app.$data );
+    
+
   }
 }
 </script>
