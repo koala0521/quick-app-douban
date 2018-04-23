@@ -16,7 +16,7 @@
   export default {
     onCreate:function() {
 
-        APP_STATISTICS.createApp( this );
+        APP_STATISTICS.app_sta_init( this );
 
 
         // console.info('*****Application onCreate*****' , "入口 >> this.$def>>>>" ,JSON.stringify( this.$def ) );

@@ -1,14 +1,17 @@
-import storage from '@system.storage' 
-import nativeFetch from '@system.fetch'
-import device from '@system.device'
-import geolocation from '@system.geolocation'
-import network from '@system.network'
+// 需要声明在  manifest.json 的 features 属性中依赖模块
+import storage from '@system.storage'; 
+import nativeFetch from '@system.fetch';
+import device from '@system.device';
+import geolocation from '@system.geolocation';
+import network from '@system.network';
 
-import app from '@system.app'
-import router from '@system.router'
+// 不需要声明的全局模块
+import app from '@system.app';
+import router from '@system.router';
 
 // 加密文件
 const aesjs = require("aes-js");
+
 
 // 工具函数
 const _toString = Object.prototype.toString;
@@ -52,7 +55,7 @@ function getByteLen(val) {
           len += 1;
     }
     return len;
-  }
+}
 
 
 //  驼峰式 转为 下划线式 
@@ -74,8 +77,7 @@ function getCamelCase( str ) {
 function aesCbc_encrypt( string ){
 
     if( typeof string !== "string" ){
-        console.log("string 必须是字符串");
-        return 
+        return ""
     }
     var len = getByteLen( string ) % 16;
 
@@ -88,7 +90,6 @@ function aesCbc_encrypt( string ){
     var aesCbc = new aesjs.ModeOfOperation.cbc(KEY, IV);
     var encryptedBytes = aesCbc.encrypt(textBytes);
     
-    // To print or store the binary data, you may convert it to hex
     var encryptedHex = aesjs.utils.hex.fromBytes(encryptedBytes);
         
     return encryptedHex
@@ -114,7 +115,13 @@ const SERVER_URL = "http://dev.data.so-quick.cn";
 const STORAGE_KEY = "APP_STATISTICS_DATA";
 
 // 加密要用的秘钥
-const KEY = [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 ];
+const KEY =(function(){
+    let arr =  [];
+    for (let i = 0; i < 16; i++) {
+        arr.push(i+1);
+    }
+    return arr
+})();
 
 // 向量--分组加密时，作为初始的密文
 // The initialization vector (must be 16 bytes)
@@ -163,33 +170,30 @@ const APP_STATISTICS = {
         "package":"",
 
         // 来源平台
-        "packageName":"",
+        "packageName":"",  //  => channel
         
         // 快应用名称
         "name":"",
 
         // 快应用 版本
-        "appVersionName":"",
-        
-        // 快应用 版本代码
-        "appVersionCode":"",        
-
+        "appVersionName":"", // => svr
+              
         // 设备唯一id
-        "device":"",
+        "device":"",  //  clientId
         
         "mac":"",
 
         // 用户唯一id
-        "user":"",
+        "user":"",  // osId
 
-        // uuid 未授权时，生产的用户id
-        "uuid":"",
+        // cuid 未授权时，js 生成的用户id
+        "cuid":"",
 
         // 请求id
         "requestId": "req" + (new Date).getTime(),
 
         // 是否加密
-        "hasEncrypt":"0",
+        "hasEncrypt":"1",
 
         // 入口页面
         "entry":"",
@@ -200,19 +204,33 @@ const APP_STATISTICS = {
 
     // 设备信息
     "deviceInfo":{
-        "brand":"",
+        // 品牌
+        "brand":"",  // => make
+        // 生产厂商
         "manufacturer":"",
+        // 型号
         "model":"",
+        // 产品名称
         "product":"",
+        // 操作系统
         "osType":"",
-        "osVersionName":"",
-        "osVersionCode":"",
+        // 系统版本 
+        "osVersionName":"",  // => ovr
+        // "osVersionCode":"",
         "platformVersionName":"",
-        "platformVersionCode":"",
+        // "platformVersionCode":"",
+
+        // 语言
         "language":"",
+
+        // 地区
         "region":"",
+
         "screenWidth":"",
-        "screenHeight":""
+        "screenHeight":"",
+
+        // 网络类型
+        "netType":""
     },
 
     // 地理位置
@@ -246,11 +264,14 @@ const APP_STATISTICS = {
         // 进入时间 
         APP_STATISTICS.baseData.time = d.getTime() + '';
 
-        // 缓存请求 reqestId
+        // 缓存  reqestId
         storage.set({
             key: '_SD_BD_REQUEST_ID_',
             value: APP_STATISTICS.baseData.requestId
         })
+
+        // 读取 cuid        
+        APP_STATISTICS.getCuid();
 
         for ( let key in APP_STATISTICS.baseData ) {
 
@@ -272,17 +293,10 @@ const APP_STATISTICS = {
         // 获取 entry 页面
         APP_STATISTICS.baseData.entry = manifest.router.entry;
         
-        // 获取信息
+        // 获取授权信息
         APP_STATISTICS.getWarrantData();
         
     },
-    // // 关闭app
-    // destroyApp(){
-
-    //     console.log( `关闭app` );
-        
-        
-    // },
     // 获取授权信息
     getWarrantData(){
 
@@ -298,26 +312,9 @@ const APP_STATISTICS = {
 
             },
             fail: function(data, code) {
-                let dt = new Date();
-                storage.get({
-                    key: "_SD_BD_UUID_",
-                    success: function(data) {
-                        let rid = "";
-                        if( data ){                   
-                            rid = data;
-                        } else {
-                            rid = APP_STATISTICS.createUuId();
-                            storage.set({
-                                key: '_SD_BD_UUID_',
-                                value: rid
-                            })
-                        }
-                        APP_STATISTICS.baseData.uuid = rid;
-                    },
-                    fail: function(data, code) {
-                        console.log("storage handling fail, code=" + code);
-                    }
-                })
+
+                APP_STATISTICS.getCuid();
+
             },
             'complete': function () {
                 APP_STATISTICS.deviceIdWarrant = true;
@@ -327,7 +324,7 @@ const APP_STATISTICS = {
         device.getInfo({
             'success':function( data ){
 
-                for (const key in data ) {
+                for (const key in APP_STATISTICS.deviceInfo ) {
                     if ( data.hasOwnProperty(key) ) {
 
                         APP_STATISTICS.deviceInfo[key] = data[key];                        
@@ -362,7 +359,8 @@ const APP_STATISTICS = {
         // 获取网络状况
         network.getType({
             success: function (data) {
-              console.log(`handling success: ${data.type}`)
+              console.log(`handling success: ${data.type}`);
+              APP_STATISTICS.deviceInfo.netType = data.type;
             },
             'complete': function () {
                 APP_STATISTICS.networkWarrant = true;
@@ -371,6 +369,30 @@ const APP_STATISTICS = {
 
         //   监测用户是否完成授权 
         this.lisenerWarranting();
+    },
+
+    // 读取cuid ，没有时， 生成cuid
+    getCuid(){
+        storage.get({
+            key: "_SD_BD_CUID_",
+            success: function(data) {
+                let rid = "";
+                if( data ){                   
+                    rid = data;
+                } else {
+                    rid = APP_STATISTICS.createCuid();
+                    storage.set({
+                        key: '_SD_BD_CUID_',
+                        value: rid
+                    })
+                }
+                APP_STATISTICS.baseData.cuid = rid;
+                console.log("storage cuid >>>>" + rid );
+            },
+            fail: function(data, code) {
+                console.log("storage handling fail, code=" + code);
+            }
+        })        
     },
 
     // 设置缓存
@@ -398,7 +420,7 @@ const APP_STATISTICS = {
 
             }
         });
-        
+ 
     },
 
     // 读取缓存
@@ -430,7 +452,7 @@ const APP_STATISTICS = {
         });
     },
 
-    // 监听用户是否完成授权 （ 包含通过、未通过 ）
+    // 监听用户是否完成授权行为 （ 包含通过、未通过 ）
     lisenerWarranting(){
         
         const timer = setInterval( ()=>{
@@ -438,15 +460,12 @@ const APP_STATISTICS = {
             // 所有授权完成，发送日志
             if( this.deviceIdWarrant && this.deviceInfoWarrant && this.getLocationWarrant && this.networkWarrant ){
 
-                clearInterval( timer );
-                console.log( `准备发送日志：` );
-                
+                clearInterval( timer );                
                 // 设置缓存
                 APP_STATISTICS.setStorage();
                     
                 let args = Object.assign( {} , APP_STATISTICS.baseData , APP_STATISTICS.deviceInfo , APP_STATISTICS.location );
                         
-                // console.log( '提交日志>>>>>>'  , aesCbc_encrypt( JSON.stringify( args ) )  );  
                 storage.get({
                     key: '_SD_BD_REQUEST_ID_',
                     "success":function(data){
@@ -463,34 +482,70 @@ const APP_STATISTICS = {
             
         },10 );
     },
-    // 生成 uuid
-    createUuId(){
+    // 生成 cuid
+    createCuid(){
         let id = "";
-
-        function S4() {
+        let d = new Date;
+        function randomStr() {
             return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
         }
 
-        id =  APP_STATISTICS.baseData.package + "-" + S4() + "-" + S4()+ "-" + S4(); 
+        // id =  APP_STATISTICS.baseData.package + "-" + randomStr() + "-" + randomStr()+ "-" + randomStr(); 
+        id =  d.getTime() + "-" + randomStr() + "-" + randomStr()+ "-" + randomStr(); 
 
         return id
     },
-    // 保存日志数据
+    // 提交日志数据
     submitLog( args ){
+ 
+        // key值替换 ：统一公司数据字段
+        let newKeys = {
+
+            "packageName":"channel",
+
+            "appVersionName":"svr",
+
+            "device":"clientId",
+
+            "user":"osId", 
+
+            "brand":"make", 
+
+            "osVersionName":"ovr",
+
+            "mac":"infoMa"
+
+        }; 
+        
+        // 加密参数 : 注意， 这里的 key 是经过 newKeys 转换后的 key
+        let encryptArgs = [ "clientId" , "osId", "cuid", "infoMa" ];
 
         // key值转换： 驼峰式 转为 下划线式
         let change_args = {};
         for ( const key in args ) {
             if ( args.hasOwnProperty(key) ) {
-                change_args[ getKebabCase( key ) ] = args[key];                         
+
+                // key 替换
+                let newKey = newKeys[ key ] || key;
+
+                // 参数加密
+                let index = encryptArgs.findIndex(item=>{
+                    return item === key 
+                })
+
+                if( index < 0 ){
+
+                    change_args[ getKebabCase( newKey ) ] = args[key]; 
+                }else{
+                    // 加密
+                    change_args[ getKebabCase( newKey ) ] = aesCbc_encrypt( args[key] ) ; 
+                }                       
             }
         }
+        console.log( `参数查看：>>>> ${ JSON.stringify( change_args ) } ` );
      
         // JSON转为查询字符串
         let argsToQueryStr = toQueryString( change_args );      
-
-        // 加密
-        argsToQueryStr = aesCbc_encrypt( argsToQueryStr );
 
         // 提交日志
         NETWORK.get({
@@ -504,11 +559,8 @@ const APP_STATISTICS = {
     },
 
     log(...arg){
-
-        console.log( "统计函数>>>打印日志" ,  JSON.stringify(arguments[0]) );
-        
+        console.log( "统计函数>>>打印日志" ,  JSON.stringify(arguments[0]) );        
     }
-
 
 };
 
@@ -516,9 +568,15 @@ const APP_STATISTICS = {
 // 全局变量
 const hookTo = global.__proto__ || global;
 
-hookTo.APP_STATISTICS = APP_STATISTICS;
+// 只暴露接口
+hookTo.APP_STATISTICS = {
 
-export default APP_STATISTICS 
+    "app_sta_init":APP_STATISTICS.createApp
+};
+
+export default {
+    "app_sta_init":APP_STATISTICS.createApp
+} 
 
 
 

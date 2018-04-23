@@ -95,8 +95,7 @@ export default {
 
     data.currentPage = "aoubt/aaa";
 
-
-    APP_STATISTICS.log( this.$page );
+    // APP_STATISTICS.log( this.$page );
 
     // console.log( '页面 >> this 信息 >>>>' ,  typeof this === "object" ? JSON.stringify( this ) : this  );
 
