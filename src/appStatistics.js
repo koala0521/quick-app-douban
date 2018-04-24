@@ -145,9 +145,6 @@ const NETWORK = {
 
         let arg = Object.assign( obj , args , { url } );
 
-        console.log( "请求参数", JSON.stringify( obj ) );
-        
-
         nativeFetch.fetch( obj );
     },
     'get':function( args ){
@@ -170,21 +167,21 @@ const APP_STATISTICS = {
         "package":"",
 
         // 来源平台
-        "packageName":"",  //  => channel
+        "packageName":"",  //发送日志时，key 需要修改  =>  channel
         
         // 快应用名称
         "name":"",
 
         // 快应用 版本
-        "appVersionName":"", // => svr
+        "appVersionName":"", //发送日志时，key 需要修改  =>  svr
               
         // 设备唯一id
-        "device":"",  //  clientId
+        "device":"",  //发送日志时，key 需要修改  => clientId
         
         "mac":"",
 
         // 用户唯一id
-        "user":"",  // osId
+        "user":"",  //发送日志时，key 需要修改  => osId
 
         // cuid 未授权时，js 生成的用户id
         "cuid":"",
@@ -200,6 +197,9 @@ const APP_STATISTICS = {
 
         // 进入app的时间
         "time":""
+
+        // 接口类型 ： 接口类型 ， 在发送请求的之前增加。
+        // "actioin":""
     },
 
     // 设备信息
@@ -217,6 +217,7 @@ const APP_STATISTICS = {
         // 系统版本 
         "osVersionName":"",  // => ovr
         // "osVersionCode":"",
+        // 平台版本
         "platformVersionName":"",
         // "platformVersionCode":"",
 
@@ -416,7 +417,7 @@ const APP_STATISTICS = {
             'value':JSON.stringify( data ),
             'success':function(){ 
                 
-                console.log( '设置缓存成功>>>>>>');    
+                console.log( '设置缓存成功');    
 
             }
         });
@@ -470,11 +471,11 @@ const APP_STATISTICS = {
                     key: '_SD_BD_REQUEST_ID_',
                     "success":function(data){
                         args.requestId = data;                        
-                        APP_STATISTICS.submitLog( args );
+                        APP_STATISTICS.handleData( args );
                     },
                     "fail":function(){
                         args.requestId = APP_STATISTICS.baseData.requestId;
-                        APP_STATISTICS.submitLog( args );
+                        APP_STATISTICS.handleData( args );
                     }
                 })
 
@@ -482,7 +483,10 @@ const APP_STATISTICS = {
             
         },10 );
     },
-    // 生成 cuid
+
+    /**
+     * js 生成 cuid  
+     */ 
     createCuid(){
         let id = "";
         let d = new Date;
@@ -495,10 +499,14 @@ const APP_STATISTICS = {
 
         return id
     },
-    // 提交日志数据
-    submitLog( args ){
+
+    /**
+     * 格式化日志数据
+     * @param {*} args 原始数据
+     */ 
+    handleData( args ){
  
-        // key值替换 ：统一公司数据字段
+        // key值替换 ：统一修改为公司规定字段
         let newKeys = {
 
             "packageName":"channel",
@@ -520,7 +528,7 @@ const APP_STATISTICS = {
         // 加密参数 : 注意， 这里的 key 是经过 newKeys 转换后的 key
         let encryptArgs = [ "clientId" , "osId", "cuid", "infoMa" ];
 
-        // key值转换： 驼峰式 转为 下划线式
+        // key值命名转换： 驼峰式 转为 下划线式
         let change_args = {};
         for ( const key in args ) {
             if ( args.hasOwnProperty(key) ) {
@@ -528,7 +536,7 @@ const APP_STATISTICS = {
                 // key 替换
                 let newKey = newKeys[ key ] || key;
 
-                // 参数加密
+                // 检查参数是否需要加密
                 let index = encryptArgs.findIndex(item=>{
                     return item === key 
                 })
@@ -542,10 +550,24 @@ const APP_STATISTICS = {
                 }                       
             }
         }
-        console.log( `参数查看：>>>> ${ JSON.stringify( change_args ) } ` );
-     
+
+        APP_STATISTICS.submitAction( change_args , "" );
+    },
+   
+    /**
+     * 发送日志 , 只用于发送数据 
+     * @param {object} args  数据
+     * @param {string} actionType  请求类型
+     */ 
+    submitAction( args , actionType ){
+        
+        let type = actionType || "";
+        
+        args.action = type;
         // JSON转为查询字符串
-        let argsToQueryStr = toQueryString( change_args );      
+        let argsToQueryStr = toQueryString( args );      
+
+        console.log( `参数查看：>>>> ${ JSON.stringify( args ) } ` );
 
         // 提交日志
         NETWORK.get({
@@ -556,14 +578,9 @@ const APP_STATISTICS = {
                 }                        
             }
         });
-    },
-
-    log(...arg){
-        console.log( "统计函数>>>打印日志" ,  JSON.stringify(arguments[0]) );        
     }
 
 };
-
 
 // 全局变量
 const hookTo = global.__proto__ || global;
