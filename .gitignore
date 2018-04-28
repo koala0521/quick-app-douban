@@ -147,3 +147,6 @@ crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 
+dist
+*/*/dist
+.rpk

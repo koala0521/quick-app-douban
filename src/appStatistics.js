@@ -12,7 +12,6 @@ import router from '@system.router';
 // 加密文件
 const aesjs = require("aes-js");
 
-
 // 工具函数
 const _toString = Object.prototype.toString;
 
@@ -71,7 +70,6 @@ function getCamelCase( str ) {
         return i.toUpperCase();
     } )
 }
-
 
   //  128位密钥 加密 
 function aesCbc_encrypt( string ){

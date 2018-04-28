@@ -3,10 +3,6 @@
 
 
 
-**关于本项目介绍可以查看我的文章，**[传送门](https://juejin.im/post/5aced721f265da237e0a1a32)
-
-
-
 ~~~
 ## 克隆项目
 git clone git@github.com:keenjaan/quick-app-douban.git
