@@ -79,7 +79,7 @@ import fetch from '@system.fetch'
       } else {
         this.type = 'books';
       }
-      console.log(this.type, 'type');
+
       this.theme = this.$app.$def.theme;
       this.loadAndRender()
     },

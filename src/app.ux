@@ -9,29 +9,20 @@
   import util from './util'
   import router from '@system.router'
 
-  // 引入统计代码
-  import APP_STATISTICS from './appStatistics';
-
+// 引入统计代码
+  import APP_STATISTICS from '../gulp/dist/appStatistics.min';
 
   export default {
+
     onCreate:function() {
 
         APP_STATISTICS.app_sta_init( this );
-
-
-        // console.info('*****Application onCreate*****' , "入口 >> this.$def>>>>" ,JSON.stringify( this.$def ) );
-
-    // console.log( "入口 >> global.__proto__ || global >>>" , JSON.stringify( global.APP_STATISTICS ) );
-
-                
-    // console.log( '入口 >> this 信息 >>>>' , JSON.stringify( this )  );
+     
+      // console.log( '入口 >> this 信息 >>>>' , JSON.stringify( this )  );
         
-    //     // console.log( '入口 >> $page 信息 >>>>' , JSON.stringify( $page )  );
-
-    // console.log( '入口 >> this.$data 信息 >>>>' , typeof this.$data === "object" ? JSON.stringify( this.$data ) : this.$data );
+    console.log( '入口 >> this.$data 信息 >>>>' , typeof this.$data === "object" ? JSON.stringify( this.$data ) : this.$data );
     
     // console.log( '入口 >> this.$def 信息 >>>>' , typeof this.$def === "object" ? JSON.stringify( this.$def) : this.$def );
-
 
     },
     onDestroy () {

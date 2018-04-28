@@ -11,6 +11,15 @@
                     <div>
                         <text class="mess"> 快应用测试demo </text>
                     </div>
+
+                </div>
+
+                <div class="item-warp" >
+                        <text class="item-order">2、</text>
+                    <div>  
+                        <!-- <a href="http://sandbox.sspapi.gm825.net/url/proxy?app_id=434&adslot_id=2570">跳转抽奖</a> -->
+                        <text onclick="toPage" > 跳转抽奖 </text>
+                    </div>
                 </div>
                 <!-- <div class="item-warp">
                     <text class="item-order">2、</text>
@@ -46,6 +55,7 @@
         flex-direction: column;
         background-color: #ffffff;
         padding: 10px;
+        width: 100%;
     }
     .mess {
         font-size: 32px;
@@ -74,6 +84,7 @@
 <script>
 import app from '@system.app'
 import router from '@system.router'
+import webview from '@system.webview'
 
 // console.log( ' 关于页面 (app.getInfo())>>>>' , JSON.stringify( app.getInfo() ) );
 
@@ -88,7 +99,7 @@ export default {
   onShow(){
         
     let page = router.getState(); //  路由信息报错
-    console.log( '路由信息 router.getState() >>>>' , JSON.stringify(page)  );
+    // console.log( '路由信息 router.getState() >>>>' , JSON.stringify(page)  );
 
     // 全局数据 app 的所有地方都可以访问到。
     let data = this.$app.$data;
@@ -99,15 +110,22 @@ export default {
 
     // console.log( '页面 >> this 信息 >>>>' ,  typeof this === "object" ? JSON.stringify( this ) : this  );
 
-    console.log( '页面 >> this.$page 信息 >>>>' , typeof this.$page === "object" ? JSON.stringify( this.$page ) : this.$page );
+    // console.log( '页面 >> this.$page 信息 >>>>' , typeof this.$page === "object" ? JSON.stringify( this.$page ) : this.$page );
 
-    // console.log( '页面 >> this.$app 信息 >>>>' , typeof this.$app === "object" ? JSON.stringify( this.$app ) : this.$app );
+    // // console.log( '页面 >> this.$app 信息 >>>>' , typeof this.$app === "object" ? JSON.stringify( this.$app ) : this.$app );
 
-    console.log( '页面 >> this.$app.$def 信息 >>>>' , typeof this.$app.$def === "object" ? JSON.stringify( this.$app.$def ) : this.$app.$def );
+    // console.log( '页面 >> this.$app.$def 信息 >>>>' , typeof this.$app.$def === "object" ? JSON.stringify( this.$app.$def ) : this.$app.$def );
 
-    console.log( '页面 >> this.$app.$data 信息 >>>>' , typeof this.$app.$data === "object" ? JSON.stringify( this.$app.$data ) : this.$app.$data );
+    // console.log( '页面 >> this.$app.$data 信息 >>>>' , typeof this.$app.$data === "object" ? JSON.stringify( this.$app.$data ) : this.$app.$data );
     
 
+  },
+  toPage(evt){
+
+    webview.loadUrl({
+        url: 'http://sandbox.sspapi.gm825.net/url/proxy?app_id=434&adslot_id=2570'
+    })
+    
   }
 }
 </script>
