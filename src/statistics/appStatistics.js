@@ -126,8 +126,6 @@ const NETWORK = {
   fetch: function(args) {
     let url = config.url + args.url;
 
-    // console.log( `日志url>>>>>: ${ url } ` );
-
     let obj = {
       url: config.url + args.url,
       fail: function(data, code) {
@@ -286,7 +284,7 @@ const APP_STATISTICS = {
   getWarrantData() {
     // 读取设备id和用户id
     device.getId({
-      type: ["device", "mac", "user"], // 最少一个，最多四个
+      type: ["device", "mac", "user"], 
       success: function(data) {
         APP_STATISTICS.baseData.device = data.device;
         APP_STATISTICS.baseData.mac = data.mac;
@@ -334,9 +332,13 @@ const APP_STATISTICS = {
     network.getType({
       success: function(data) {
         APP_STATISTICS.deviceInfo.netType = data.type;
+
+        console.log(`统计网络获取成功>>>>>>`);
+        
       },
       complete: function() {
         APP_STATISTICS.networkWarrant = true;
+        console.log(`网络获取完成>>>>>>`);
       }
     });
 
@@ -460,8 +462,7 @@ const APP_STATISTICS = {
     }
 
     // id =  APP_STATISTICS.baseData.package + "-" + randomStr() + "-" + randomStr()+ "-" + randomStr();
-    id =
-      d.getTime() + "-" + randomStr() + "-" + randomStr() + "-" + randomStr();
+    id = d.getTime() + "-" + randomStr() + "-" + randomStr() + "-" + randomStr();
 
     return id;
   },
@@ -529,7 +530,7 @@ const APP_STATISTICS = {
     // JSON转为查询字符串
     let argsToQueryStr = toQueryString(args);
 
-    console.log(`参数查看：>>>> ${JSON.stringify(args)} `);
+    // console.log(`参数查看：>>>> ${JSON.stringify(args)} `);
 
     // 提交日志
     NETWORK.get({

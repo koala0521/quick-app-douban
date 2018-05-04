@@ -18,7 +18,7 @@ var baseDir = "../src/statistics";
 // 基础文件
 var baseFiles = [baseDir + '/aes.js'  , baseDir + '/appStatistics.js' ];
 
-var allFils;
+// var allFils;
 
 // 各环境对应文件
 var config = {
@@ -47,13 +47,16 @@ var tasks = {
     },
 };
 
-gulp.task('default',['delete'] , function() {
+function init(){
     var env = args.env || 'dev';
     var f = config[env] || [];
-
-    // 合并文件
-    allFils = f.concat( baseFiles );
+    console.log( env );
     
+    return f.concat( baseFiles )
+}
+
+gulp.task('default',['delete'] , function() {
+    var env = args.env || 'dev';
     // 执行任务
     tasks[env] && tasks[env]();
     
@@ -70,6 +73,9 @@ gulp.task('build' , ['con'], ()=>{
 // 测试打包
 gulp.task('test',function(){  
 
+    // 合并依赖
+    let allFils = init();
+
     return gulp.src( allFils )
         .pipe(concat('appStatistics.js'))
         .pipe( rename({ extname: '.min.js' }) )        
@@ -81,12 +87,14 @@ gulp.task('test',function(){
 
 // 沙盒打包
 gulp.task('prod',function(){  
+    // 合并依赖
+    let allFils = init();
 
     return gulp.src( allFils )
         .pipe(concat('appStatistics.js'))
         .pipe( rename({ extname: '.min.js' }) )        
         .pipe( sourcemaps.init() )
-        .pipe( uglify_es(/* options */) )        
+        .pipe( uglify_es() )        
         .pipe( sourcemaps.write("./") ) 
         .pipe(gulp.dest('./dist'));
 }) 
@@ -99,6 +107,8 @@ gulp.task('delete',function(cb){
 
 // 合并
 gulp.task("con",function(){
+    // 合并依赖
+    let allFils = init();
 
     return gulp.src( allFils )
         .pipe(concat('appStatistics.js'))      

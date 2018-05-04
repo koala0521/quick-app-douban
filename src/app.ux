@@ -8,6 +8,7 @@
   import './module/network'
   import util from './util'
   import router from '@system.router'
+  import network from "@system.network";  
 
 // 引入统计代码
   import APP_STATISTICS from '../gulp/dist/appStatistics.min';
@@ -15,6 +16,16 @@
   export default {
 
     onCreate:function() {
+
+          network.getType({
+            success: function(data) {
+              console.log(`入口网络获取成功`);
+              
+            },
+            complete: function() {
+              console.log(`入口网络获取完成`);
+            }
+          });
 
         APP_STATISTICS.app_sta_init( this );
      
